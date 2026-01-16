@@ -1,0 +1,45 @@
+[
+    {
+        "index": 0,
+        "timestamp": "2026-01-16 20:37:09.830038",
+        "data": {
+            "msg": "Genesis"
+        },
+        "previous_hash": "0",
+        "validator": "System",
+        "hash": "a456a1065a15e56bd597a4c0f80ece6538bf0bf6d72b0e5e0248e0f87a47ee86"
+    },
+    {
+        "index": 1,
+        "timestamp": "2026-01-16 20:37:09.844625",
+        "data": {
+            "data_hash": "1c1c8c80f425e39db8acdf42110f191cefd1c252882aa83e52ab76f9021911ec",
+            "model_hash": "5883dc39760d94625e66e170d6aa03f714e9074a53c94aeb8da0145508b05214",
+            "accuracy": {
+                "Temperature_C": {
+                    "MAE": 1.5891,
+                    "R2": 0.9243
+                },
+                "Humidity_%": {
+                    "MAE": 6.9406,
+                    "R2": 0.798
+                },
+                "WindSpeed_m/s": {
+                    "MAE": 1.517,
+                    "R2": 0.1252
+                },
+                "Rainfall_mm": {
+                    "MAE": 2.0251,
+                    "R2": 0.0436
+                },
+                "UV_Index": {
+                    "MAE": 0.2544,
+                    "R2": 0.6643
+                }
+            }
+        },
+        "previous_hash": "a456a1065a15e56bd597a4c0f80ece6538bf0bf6d72b0e5e0248e0f87a47ee86",
+        "validator": "Node_Alpha",
+        "hash": "3ae1194d2690b2f74da51a9ac9ddad76462caf3c361fd2079c9d78727d0cdb8c"
+    }
+]
