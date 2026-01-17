@@ -69,8 +69,13 @@ def visualize_results(y_true, y_pred, cols):
     fig, axs = plt.subplots(len(cols), 1, figsize=(10, 15), sharex=True)
     fig.suptitle('AI Model Verification: Actual vs Predicted (Last 30 Samples)', fontsize=14)
     for i, col in enumerate(cols):
+        # Apply visual clipping for the graph
+        display_pred = y_pred[-30:, i]
+        if col in ["Rainfall_mm", "UV_Index"]:
+            display_pred = np.maximum(0, display_pred)
+            
         axs[i].plot(y_true[-30:, i], label='Actual', color='blue', marker='o', markersize=3)
-        axs[i].plot(y_pred[-30:, i], label='AI Forecast', color='orange', linestyle='--', marker='x')
+        axs[i].plot(display_pred, label='AI Forecast', color='orange', linestyle='--', marker='x')
         axs[i].set_ylabel(col.replace('_',' '))
         axs[i].legend(loc='upper right')
     plt.xlabel('Timeline (Days)')
@@ -80,34 +85,29 @@ def visualize_results(y_true, y_pred, cols):
 
 # --- 3. MAIN PIPELINE ---
 def run_pipeline():
-    # A. Data Loading
     URL = "https://raw.githubusercontent.com/Ritwik240/Weather-Dataset/refs/heads/main/Unified_Weather_Dataset_Latest.json"
     df = pd.read_json(URL)
     data_content = requests.get(URL).content
     data_hash = hashlib.sha256(data_content).hexdigest()
     
-    # B. Feature Engineering
     METEO = ["Temperature_C", "Humidity_%", "WindSpeed_m/s", "Rainfall_mm", "UV_Index"]
     df['Month_Sin'] = np.sin(2 * np.pi * pd.to_datetime(df['Date']).dt.month / 12)
     df['Month_Cos'] = np.cos(2 * np.pi * pd.to_datetime(df['Date']).dt.month / 12)
     
-    # Anomaly Detection
     scaler_ae = MinMaxScaler()
     df['Anomaly_Score'] = get_anomaly_scores(scaler_ae.fit_transform(df[METEO]))
     
-    # C. Data Preparation & Scaling
     FEATS = METEO + ["Month_Sin", "Month_Cos", "Anomaly_Score"]
     scaler = MinMaxScaler()
     scaled = scaler.fit_transform(df[FEATS])
     
-    # Save Individual Scalers (Matching your Photo 2 structure)
+    # Save Individual Scalers (Photo 2 structure)
     for i, col in enumerate(METEO):
         col_scaler = MinMaxScaler()
         col_scaler.min_, col_scaler.scale_ = [scaler.min_[i]], [scaler.scale_[i]]
         clean_name = col.replace("/", "_").replace("%", "pct")
         joblib.dump(col_scaler, f'scaler_{clean_name}.joblib')
     
-    # D. Windowing for CNN-LSTM
     WIN, FOR = 14, 7
     X, y = [], []
     for i in range(len(scaled) - WIN - FOR):
@@ -115,23 +115,18 @@ def run_pipeline():
         y.append(scaled[i+WIN:i+WIN+FOR, :len(METEO)])
     X, y = np.array(X), np.array(y)
     
-    # E. Training
     model = build_cnn_lstm(WIN, len(FEATS), FOR, len(METEO))
     model.fit(X, y, epochs=20, verbose=0, callbacks=[EarlyStopping(patience=3)])
     model.save('weather_model_cnn_lstm.h5')
     
-    # F. Evaluation & Accuracy Metrics
+    # E. Evaluation & Accuracy Metrics
     test_preds = model.predict(X[-100:])
-    y_true_real = []
-    y_pred_real = []
+    y_true_real, y_pred_real = [], []
     
     for i in range(len(test_preds)):
-        # Inverse scaling logic for metrics
-        row_true = np.zeros((FOR, len(FEATS)))
-        row_pred = np.zeros((FOR, len(FEATS)))
+        row_true, row_pred = np.zeros((FOR, len(FEATS))), np.zeros((FOR, len(FEATS)))
         row_true[:, :len(METEO)] = y[-100+i]
         row_pred[:, :len(METEO)] = test_preds[i]
-        
         y_true_real.append(scaler.inverse_transform(row_true)[0, :len(METEO)])
         y_pred_real.append(scaler.inverse_transform(row_pred)[0, :len(METEO)])
         
@@ -144,10 +139,9 @@ def run_pipeline():
             "R2": round(float(r2_score(y_true_real[:, i], y_pred_real[:, i])), 4)
         }
 
-    # G. Generate Visualization
     visualize_results(y_true_real, y_pred_real, METEO)
 
-    # H. 7-Day Forecast with Alerts (Matching your Photo 3)
+    # G. 7-Day Forecast with Clipping & Confidence Intervals
     last_window = scaled[-WIN:].reshape(1, WIN, len(FEATS))
     future_preds = model.predict(last_window).reshape(FOR, len(METEO))
     
@@ -159,30 +153,35 @@ def run_pipeline():
         row[:len(METEO)] = future_preds[i]
         real_vals = scaler.inverse_transform([row])[0]
         
-        rain_mm = float(real_vals[3])
-        prob = min(100, max(0, rain_mm * 15)) # Probability logic
+        # Applying np.maximum(0, ...) to ensure physical realism
+        temp = float(real_vals[0])
+        temp_mae = metrics["Temperature_C"]["MAE"]
+        rain_mm = max(0.0, float(real_vals[3]))
+        uv_val = max(0.0, float(real_vals[4]))
+        
+        prob = min(100, max(0, rain_mm * 15)) 
         
         forecast_list.append({
             "Date": (base_date + timedelta(days=i+1)).strftime('%Y-%m-%d'),
-            "Temperature_C": float(real_vals[0]),
-            "Humidity_%": float(real_vals[1]),
-            "UV_Index": float(real_vals[4]),
-            "WindSpeed_m/s": float(real_vals[2]),
-            "Rainfall_mm": rain_mm,
+            "Temperature_C": round(temp, 2),
+            "Confidence_Range": f"{round(temp - temp_mae, 1)}°C to {round(temp + temp_mae, 1)}°C",
+            "Humidity_%": round(float(real_vals[1]), 2),
+            "UV_Index": round(uv_val, 2),
+            "WindSpeed_m/s": round(float(real_vals[2]), 2),
+            "Rainfall_mm": round(rain_mm, 2),
             "Rain_Probability": round(prob, 1),
-            "Rain_Alert": "Rain Likely 🌧️" if prob > 50 else "No Rain ☀️"
+            "Rain_Alert": "Rain Likely 🌧️" if prob > 40 else "No Rain ☀️"
         })
     
     with open("forecast_7days_with_alerts.json", "w") as f:
         json.dump(forecast_list, f, indent=4)
         
-    # I. Blockchain Update
     WeatherBlockchainPoS().add_block({
         "data_hash": data_hash,
         "model_accuracy": metrics,
         "forecast_snapshot_hash": hashlib.sha256(str(forecast_list).encode()).hexdigest()
     })
-    print("✅ Pipeline complete: Blockchain updated, Scalers saved, and Forecast generated.")
+    print("✅ Pipeline updated with Physical Constraints and Confidence Intervals.")
 
 if __name__ == "__main__":
     run_pipeline()
