@@ -12,13 +12,21 @@ from tensorflow.keras.callbacks import EarlyStopping
 
 # --- 1. PROOF OF STAKE BLOCKCHAIN ---
 class Block:
-    def __init__(self, index, data, previous_hash, validator, timestamp=None):
-        self.index, self.timestamp = index, timestamp or str(datetime.now())
-        self.data, self.previous_hash, self.validator = data, previous_hash, validator
+    # Adding **kwargs allows the class to ignore the 'hash' key 
+    # when loading from the JSON file
+    def __init__(self, index, data, previous_hash, validator, timestamp=None, **kwargs):
+        self.index = index
+        self.timestamp = timestamp or str(datetime.now())
+        self.data = data
+        self.previous_hash = previous_hash
+        self.validator = validator
         self.hash = self.calculate_hash()
 
     def calculate_hash(self):
-        block_string = json.dumps(self.__dict__, sort_keys=True).encode()
+        # We exclude the 'hash' field itself during the calculation 
+        # to prevent circular logic
+        block_dict = {k: v for k, v in self.__dict__.items() if k != 'hash'}
+        block_string = json.dumps(block_dict, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
 class WeatherBlockchainPoS:
@@ -183,3 +191,4 @@ def run_pipeline():
 
 if __name__ == "__main__":
     run_pipeline()
+
