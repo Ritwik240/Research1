@@ -32490,10 +32490,10 @@
     {
         "Date":"2026-02-13T00:00:00.000",
         "UV_Index":0.65,
-        "Temperature_C":19.0,
-        "Humidity_%":53.0,
+        "Temperature_C":18.995,
+        "Humidity_%":42.45,
         "Rainfall_mm":0.0,
-        "WindSpeed_m\/s":5.7
+        "WindSpeed_m\/s":4.22
     },
     {
         "Date":"2026-02-14T00:00:00.000",
@@ -32502,5 +32502,13 @@
         "Humidity_%":52.0,
         "Rainfall_mm":0.0,
         "WindSpeed_m\/s":6.4
+    },
+    {
+        "Date":"2026-02-15T00:00:00.000",
+        "UV_Index":0.65,
+        "Temperature_C":20.8,
+        "Humidity_%":53.0,
+        "Rainfall_mm":0.0,
+        "WindSpeed_m\/s":6.1
     }
 ]
