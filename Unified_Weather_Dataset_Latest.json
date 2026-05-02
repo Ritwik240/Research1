@@ -33090,10 +33090,10 @@
     {
         "Date":"2026-04-29T00:00:00.000",
         "UV_Index":0.53,
-        "Temperature_C":31.9,
-        "Humidity_%":37.0,
-        "Rainfall_mm":0.0,
-        "WindSpeed_m\/s":5.8
+        "Temperature_C":33.015,
+        "Humidity_%":35.685,
+        "Rainfall_mm":0.765,
+        "WindSpeed_m\/s":3.635
     },
     {
         "Date":"2026-04-30T00:00:00.000",
@@ -33102,5 +33102,13 @@
         "Humidity_%":41.0,
         "Rainfall_mm":0.9,
         "WindSpeed_m\/s":8.4
+    },
+    {
+        "Date":"2026-05-01T00:00:00.000",
+        "UV_Index":0.53,
+        "Temperature_C":29.2,
+        "Humidity_%":49.0,
+        "Rainfall_mm":0.0,
+        "WindSpeed_m\/s":8.3
     }
 ]
